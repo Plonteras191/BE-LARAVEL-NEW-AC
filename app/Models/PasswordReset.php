@@ -2,19 +2,16 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Revenue extends Model
+class PasswordReset extends Model
 {
-    use HasFactory;
-
     /**
      * The table associated with the model.
      *
      * @var string
      */
-    protected $table = 'revenue';
+    protected $table = 'password_resets';
 
     /**
      * Indicates if the model should be timestamped.
@@ -29,9 +26,9 @@ class Revenue extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'booking_id',
-        'revenue_date',
-        'total_revenue',
+        'email',
+        'token',
+        'created_at',
     ];
 
     /**
@@ -40,16 +37,6 @@ class Revenue extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'revenue_date' => 'date',
-        'total_revenue' => 'decimal:2',
         'created_at' => 'datetime',
     ];
-
-    /**
-     * Get the booking that owns this revenue record.
-     */
-    public function booking()
-    {
-        return $this->belongsTo(Booking::class);
-    }
 }

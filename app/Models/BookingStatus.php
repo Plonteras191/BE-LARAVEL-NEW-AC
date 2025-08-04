@@ -10,13 +10,6 @@ class BookingStatus extends Model
     use HasFactory;
 
     /**
-     * Indicates if the model should be timestamped.
-     *
-     * @var bool
-     */
-    public $timestamps = false;
-
-    /**
      * The primary key associated with the table.
      *
      * @var string
@@ -24,18 +17,18 @@ class BookingStatus extends Model
     protected $primaryKey = 'id';
 
     /**
-     * The "type" of the auto-incrementing ID.
-     *
-     * @var string
-     */
-    protected $keyType = 'int';
-
-    /**
-     * Indicates if the IDs are auto-incrementing.
+     * Indicates if the model's ID is auto-incrementing.
      *
      * @var bool
      */
     public $incrementing = true;
+
+    /**
+     * The data type of the auto-incrementing ID.
+     *
+     * @var string
+     */
+    protected $keyType = 'int';
 
     /**
      * The attributes that are mass assignable.
@@ -47,7 +40,7 @@ class BookingStatus extends Model
     ];
 
     /**
-     * Get the bookings for the status.
+     * Get the bookings with this status.
      */
     public function bookings()
     {

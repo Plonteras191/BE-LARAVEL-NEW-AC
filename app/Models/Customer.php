@@ -51,20 +51,4 @@ class Customer extends Authenticatable
     {
         return $this->hasMany(Booking::class);
     }
-
-    /**
-     * Get the bookings cancelled by this customer.
-     */
-    public function cancelledBookings()
-    {
-        return $this->hasMany(Booking::class, 'cancelled_by');
-    }
-
-    /**
-     * Get the booking reschedules made by this customer.
-     */
-    public function bookingReschedules()
-    {
-        return $this->hasMany(BookingReschedule::class, 'rescheduled_by');
-    }
 }

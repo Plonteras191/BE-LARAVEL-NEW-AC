@@ -18,7 +18,6 @@ class BookingService extends Model
         'booking_id',
         'service_type',
         'appointment_date',
-        'appointment_time',
     ];
 
     /**
@@ -28,11 +27,10 @@ class BookingService extends Model
      */
     protected $casts = [
         'appointment_date' => 'date',
-        'appointment_time' => 'datetime:H:i',
     ];
 
     /**
-     * Get the booking that owns the booking service.
+     * Get the booking that owns the service.
      */
     public function booking()
     {
@@ -40,28 +38,18 @@ class BookingService extends Model
     }
 
     /**
-     * Get the booking AC types for the booking service.
-     */
-    public function bookingAcTypes()
-    {
-        return $this->hasMany(BookingAcType::class);
-    }
-
-    /**
      * Get the AC types for this booking service.
      */
     public function acTypes()
     {
-        return $this->belongsToMany(AcType::class, 'booking_actypes', 'booking_service_id', 'ac_type_id')
-                    ->withPivot('quantity')
-                    ->withTimestamps();
+        return $this->belongsToMany(AcType::class, 'booking_actypes');
     }
 
     /**
-     * Get the booking reschedules for the booking service.
+     * Get the booking AC types pivot records.
      */
-    public function bookingReschedules()
+    public function bookingAcTypes()
     {
-        return $this->hasMany(BookingReschedule::class);
+        return $this->hasMany(BookingAcType::class);
     }
 }

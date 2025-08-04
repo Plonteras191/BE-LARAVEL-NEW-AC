@@ -24,11 +24,10 @@ class BookingAcType extends Model
     protected $fillable = [
         'booking_service_id',
         'ac_type_id',
-        'quantity',
     ];
 
     /**
-     * Get the booking service that owns the booking AC type.
+     * Get the booking service that owns this record.
      */
     public function bookingService()
     {
@@ -36,7 +35,7 @@ class BookingAcType extends Model
     }
 
     /**
-     * Get the AC type that owns the booking AC type.
+     * Get the AC type that owns this record.
      */
     public function acType()
     {

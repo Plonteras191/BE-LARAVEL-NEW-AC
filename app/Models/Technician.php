@@ -19,18 +19,18 @@ class Technician extends Model
     ];
 
     /**
-     * Get the booking technicians for the technician.
-     */
-    public function bookingTechnicians()
-    {
-        return $this->hasMany(BookingTechnician::class);
-    }
-
-    /**
      * Get the bookings assigned to this technician.
      */
     public function bookings()
     {
         return $this->belongsToMany(Booking::class, 'booking_technicians');
+    }
+
+    /**
+     * Get the booking technicians pivot records.
+     */
+    public function bookingTechnicians()
+    {
+        return $this->hasMany(BookingTechnician::class);
     }
 }

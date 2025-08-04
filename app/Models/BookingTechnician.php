@@ -20,7 +20,7 @@ class BookingTechnician extends Model
     ];
 
     /**
-     * Get the booking that owns the booking technician.
+     * Get the booking that owns this record.
      */
     public function booking()
     {
@@ -28,7 +28,7 @@ class BookingTechnician extends Model
     }
 
     /**
-     * Get the technician that owns the booking technician.
+     * Get the technician that owns this record.
      */
     public function technician()
     {

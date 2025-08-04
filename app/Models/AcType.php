@@ -19,20 +19,18 @@ class AcType extends Model
     ];
 
     /**
-     * Get the booking AC types for the AC type.
-     */
-    public function bookingAcTypes()
-    {
-        return $this->hasMany(BookingAcType::class);
-    }
-
-    /**
      * Get the booking services that use this AC type.
      */
     public function bookingServices()
     {
-        return $this->belongsToMany(BookingService::class, 'booking_actypes', 'ac_type_id', 'booking_service_id')
-                    ->withPivot('quantity')
-                    ->withTimestamps();
+        return $this->belongsToMany(BookingService::class, 'booking_actypes');
+    }
+
+    /**
+     * Get the booking AC types pivot records.
+     */
+    public function bookingAcTypes()
+    {
+        return $this->hasMany(BookingAcType::class);
     }
 }
