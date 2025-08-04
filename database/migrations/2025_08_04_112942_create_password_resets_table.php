@@ -8,15 +8,15 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('booking_statuses', function (Blueprint $table) {
-            $table->tinyIncrements('id');
-            $table->string('status_name', 50)->unique();
-            $table->timestamps();
+        Schema::create('password_resets', function (Blueprint $table) {
+            $table->string('email')->index();
+            $table->string('token');
+            $table->timestamp('created_at')->nullable();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('booking_statuses');
+        Schema::dropIfExists('password_resets');
     }
 };
