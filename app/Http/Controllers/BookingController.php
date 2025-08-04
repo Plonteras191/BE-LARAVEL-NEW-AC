@@ -33,8 +33,7 @@ class BookingController extends Controller
         $bookedDates = DB::table('booking_services')
             ->join('bookings', 'booking_services.booking_id', '=', 'bookings.id')
             ->join('booking_statuses', 'bookings.status_id', '=', 'booking_statuses.id')
-            ->whereIn('booking_statuses.status_name', ['Pending', 'Accepted'])
-            ->whereNull('bookings.cancelled_at') // Only active bookings
+            ->whereIn('booking_statuses.status_name', ['pending', 'accepted'])
             ->whereDate('appointment_date', '>=', $startDate)
             ->whereDate('appointment_date', '<=', $endDate)
             ->select('appointment_date', DB::raw('COUNT(DISTINCT bookings.id) as booking_count'))
@@ -75,8 +74,7 @@ class BookingController extends Controller
             $count = DB::table('booking_services')
                 ->join('bookings', 'booking_services.booking_id', '=', 'bookings.id')
                 ->join('booking_statuses', 'bookings.status_id', '=', 'booking_statuses.id')
-                ->whereIn('booking_statuses.status_name', ['Pending', 'Accepted'])
-                ->whereNull('bookings.cancelled_at') // Only active bookings
+                ->whereIn('booking_statuses.status_name', ['pending', 'accepted'])
                 ->whereDate('appointment_date', $date)
                 ->distinct('bookings.id')
                 ->count('bookings.id');
@@ -104,10 +102,8 @@ class BookingController extends Controller
             'services' => 'required|array|min:1',
             'services.*.type' => 'required|string|max:50',
             'services.*.date' => 'required|date',
-            'services.*.time' => 'nullable|date_format:H:i',
             'services.*.acTypes' => 'required|array|min:1',
-            'services.*.acTypes.*.type' => 'required|string',
-            'services.*.acTypes.*.quantity' => 'required|integer|min:1'
+            'services.*.acTypes.*.type' => 'required|string'
         ]);
 
         // Start a database transaction
@@ -124,8 +120,7 @@ class BookingController extends Controller
                 $existingBookingCount = DB::table('booking_services')
                     ->join('bookings', 'booking_services.booking_id', '=', 'bookings.id')
                     ->join('booking_statuses', 'bookings.status_id', '=', 'booking_statuses.id')
-                    ->whereIn('booking_statuses.status_name', ['Pending', 'Accepted'])
-                    ->whereNull('bookings.cancelled_at') // Only active bookings
+                    ->whereIn('booking_statuses.status_name', ['pending', 'accepted'])
                     ->whereDate('appointment_date', $date)
                     ->distinct('bookings.id')
                     ->count('bookings.id');
@@ -152,18 +147,19 @@ class BookingController extends Controller
                 ]);
                 $customer = $existingCustomer;
             } else {
-                // Create new customer record
+                // Create new customer record (password is required by migration)
                 $customer = Customer::create([
                     'name' => $request->input('name'),
                     'phone' => $request->input('phone'),
                     'email' => $request->input('email'),
-                    'complete_address' => $request->input('completeAddress')
+                    'complete_address' => $request->input('completeAddress'),
+                    'password' => bcrypt('temporary') // Set a temporary password, customer can reset later
                 ]);
             }
 
-            // Get the "Pending" status (assuming it exists with id 1, or create it)
+            // Get the "pending" status (assuming it exists with id 1, or create it)
             $pendingStatus = BookingStatus::firstOrCreate([
-                'status_name' => 'Pending'
+                'status_name' => 'pending'
             ]);
 
             // Create the main booking record
@@ -178,8 +174,7 @@ class BookingController extends Controller
                 $bookingService = BookingService::create([
                     'booking_id' => $booking->id,
                     'service_type' => $service['type'],
-                    'appointment_date' => $service['date'],
-                    'appointment_time' => $service['time'] ?? null
+                    'appointment_date' => $service['date']
                 ]);
 
                 // Process AC types for this service
@@ -189,11 +184,10 @@ class BookingController extends Controller
                         'type_name' => $acTypeData['type']
                     ]);
 
-                    // Create the booking AC type relationship with quantity
+                    // Create the booking AC type relationship (without quantity since it's not in the migration)
                     BookingAcType::create([
                         'booking_service_id' => $bookingService->id,
-                        'ac_type_id' => $acType->id,
-                        'quantity' => $acTypeData['quantity']
+                        'ac_type_id' => $acType->id
                     ]);
                 }
             }
@@ -279,21 +273,23 @@ class BookingController extends Controller
         }
     }
 
-    // Cancel booking
+    // Cancel booking (by updating status to cancelled)
     public function cancel(Request $request, $id)
     {
         $request->validate([
-            'cancellation_reason' => 'required|string|max:500',
-            'cancelled_by' => 'nullable|integer|exists:customers,id'
+            'cancellation_reason' => 'nullable|string|max:500'
         ]);
 
         try {
             $booking = Booking::findOrFail($id);
 
+            // Get or create cancelled status
+            $cancelledStatus = BookingStatus::firstOrCreate([
+                'status_name' => 'cancelled'
+            ]);
+
             $booking->update([
-                'cancelled_at' => now(),
-                'cancellation_reason' => $request->input('cancellation_reason'),
-                'cancelled_by' => $request->input('cancelled_by')
+                'status_id' => $cancelledStatus->id
             ]);
 
             return response()->json([
@@ -325,9 +321,11 @@ class BookingController extends Controller
             });
         }
 
-        // Filter by active/cancelled bookings
+        // Filter by active/cancelled bookings (filter by status instead)
         if ($request->has('include_cancelled') && !$request->boolean('include_cancelled')) {
-            $query->active(); // Use the scope from the model
+            $query->whereHas('status', function($q) {
+                $q->where('status_name', '!=', 'cancelled');
+            });
         }
 
         // Filter by date range if provided
@@ -371,18 +369,15 @@ class BookingController extends Controller
             ->leftJoin('booking_actypes', 'booking_services.id', '=', 'booking_actypes.booking_service_id')
             ->leftJoin('ac_types', 'booking_actypes.ac_type_id', '=', 'ac_types.id')
             ->whereDate('appointment_date', $date)
-            ->whereIn('booking_statuses.status_name', ['Pending', 'Accepted'])
-            ->whereNull('bookings.cancelled_at') // Only active bookings
+            ->whereIn('booking_statuses.status_name', ['pending', 'accepted'])
             ->select(
                 'customers.name',
                 'customers.phone',
                 'booking_services.service_type',
                 'booking_services.appointment_date',
-                'booking_services.appointment_time',
                 'booking_statuses.status_name',
                 'bookings.id as booking_id',
-                'ac_types.type_name as ac_type',
-                'booking_actypes.quantity'
+                'ac_types.type_name as ac_type'
             )
             ->get();
 
